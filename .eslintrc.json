@@ -13,15 +13,32 @@
   ],
   "root": true,
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "react", "simple-import-sort"],
+  "plugins": [
+    "@typescript-eslint",
+    "react",
+    "simple-import-sort"
+  ],
   "overrides": [
     {
-      "files": ["*.ts", "*.tsx", "*.js"],
+      "files": [
+        "*.ts",
+        "*.tsx",
+        "*.js"
+      ],
       "parser": "@typescript-eslint/parser"
     }
   ],
   "rules": {
+    "sonarjs/no-duplicate-string": "off",
     "simple-import-sort/imports": "error",
-    "simple-import-sort/exports": "error"
+    "simple-import-sort/exports": "error",
+    "react/prop-types": [
+      2,
+      {
+        "ignore": [
+          "className"
+        ]
+      }
+    ]
   }
 }
