@@ -23,21 +23,21 @@ export async function GET() {
 
     await dbConnect();
 
-    const user = await User.findOne({ sub: data.userInfo?.sub })
+    const user = await User.findOne({ sub: data.claims?.sub })
       .populate('subscriptions')
       .populate('transactions');
 
     if (!user) {
-      const newUser = await new User({ sub: data.userInfo?.sub }).save();
+      const newUser = await new User({ sub: data.claims?.sub }).save();
       return NextResponse.json(
         {
           isAuth: true,
           isAdmin: newUser.isAdmin ?? false,
           id: newUser._id,
-          sub: data.userInfo?.sub,
-          email: data.userInfo?.email,
-          username: data.userInfo?.username,
-          avatar: data.userInfo?.picture,
+          sub: data.claims?.sub,
+          email: data.claims?.email,
+          username: data.claims?.username,
+          avatar: data.claims?.picture,
           data: {
             paymentLink: newUser.paymentLink,
             balance: newUser.balance,
@@ -54,10 +54,10 @@ export async function GET() {
         isAuth: true,
         isAdmin: user.isAdmin ?? false,
         id: user._id,
-        sub: data.userInfo?.sub,
-        avatar: data.userInfo?.picture,
-        username: data.userInfo?.username,
-        email: data.userInfo?.email,
+        sub: data.claims?.sub,
+        avatar: data.claims?.picture,
+        username: data.claims?.username,
+        email: data.claims?.email,
         data: {
           paymentLink: user.paymentLink,
           balance: user.balance,

@@ -83,6 +83,6 @@ module.exports = {
   plugins: [
     require('tailwindcss-animate'),
     require('tailwind-scrollbar'),
-    require('tailwindcss-truncate-multiline')(),
+    require('tailwindcss-truncate-multiline'),
   ],
 };
