@@ -7,12 +7,14 @@ import { verifyAuth } from '@/lib/verifyUser';
 import TempToken, { ITempToken } from '@/models/TempToken';
 import User from '@/models/User';
 
+const serverErrorMessage = 'Помилка сервера';
+const authorizationErrorMessage = 'Авторизація не виконана.';
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const { isAuthenticated, claims } = await verifyAuth(request);
     if (!isAuthenticated) {
-      return NextResponse.json({ error: 'Авторизація не виконана.' }, { status: 403 });
+      return NextResponse.json({ error: authorizationErrorMessage }, { status: 403 });
     }
 
     const newToken = new TempToken({
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (err) {
-    return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });
+    return NextResponse.json({ error: serverErrorMessage }, { status: 500 });
   }
 }
 
@@ -42,7 +44,7 @@ export async function PUT(request: NextRequest) {
     if (!authorization || authorization !== `Bearer ${process.env.TELEGRAM_API_KEY}`) {
       return NextResponse.json(
         {
-          error: 'Авторизація не виконана.',
+          error: authorizationErrorMessage,
         },
         { status: 403 }
       );
@@ -110,7 +112,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {
-    return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });
+    return NextResponse.json({ error: serverErrorMessage }, { status: 500 });
   }
 }
 
@@ -119,7 +121,7 @@ export async function DELETE(request: NextRequest) {
     await dbConnect();
     const { isAuthenticated, claims } = await verifyAuth(request);
     if (!isAuthenticated || !claims) {
-      return NextResponse.json({ error: 'Авторизація не виконана.' }, { status: 403 });
+      return NextResponse.json({ error: authorizationErrorMessage }, { status: 403 });
     }
 
     const user = await User.findOne({ sub: claims.sub });
@@ -130,6 +132,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {
-    return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });
+    return NextResponse.json({ error: serverErrorMessage }, { status: 500 });
   }
 }
