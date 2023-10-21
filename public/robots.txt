@@ -1,9 +1,0 @@
-# *
-User-agent: *
-Allow: /
-
-# Host
-Host: https://402nmzwr-3000.euw.devtunnels.ms
-
-# Sitemaps
-Sitemap: https://402nmzwr-3000.euw.devtunnels.ms/sitemap.xml
