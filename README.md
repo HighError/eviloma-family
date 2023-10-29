@@ -1,6 +1,6 @@
 <h1 align="center">Welcome to Eviloma Family 👋</h1>
 <p>
-  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-blue.svg?cacheSeconds=2592000" />
+  <img alt="Version" src="https://img.shields.io/badge/version-3.0.0-purple.svg?cacheSeconds=2592000" />
   <a href="https://twitter.com/higherrorua" target="_blank">
     <img alt="Twitter: higherrorua" src="https://img.shields.io/twitter/follow/higherrorua.svg?style=social" />
   </a>
@@ -12,6 +12,8 @@
 
 ```sh
 yarn install
+yarn migrate
+yarn build
 ```
 
 ## Usage
