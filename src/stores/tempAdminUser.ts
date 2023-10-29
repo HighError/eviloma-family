@@ -1,20 +1,20 @@
 import { create } from 'zustand';
 
+import type { transactionsSchema } from '@/db/schema';
 import Axios from '@/lib/axios';
 import progress from '@/lib/progressbar';
-import { ITransaction } from '@/models/Transaction';
-import FullUser from '@/types/fullUser';
+import type FullUser from '@/types/fullUser';
 
-interface iStore {
+type Store = {
   isLoading: boolean;
   isError: boolean;
 
   user: FullUser | null;
 
   updateUser: (id?: string) => Promise<void>;
-}
+};
 
-const useTempAdminStore = create<iStore>((set) => ({
+const useTempAdminStore = create<Store>((set) => ({
   isLoading: true,
   isError: false,
 
@@ -40,8 +40,10 @@ const useTempAdminStore = create<iStore>((set) => ({
         user: {
           ...response.data,
           transactions: response.data.transactions.sort(
-            (a: ITransaction, b: ITransaction) =>
-              new Date(b.date).getTime() - new Date(a.date).getTime()
+            (
+              a: typeof transactionsSchema.$inferSelect,
+              b: typeof transactionsSchema.$inferSelect
+            ) => new Date(b.date).getTime() - new Date(a.date).getTime()
           ),
         },
       });

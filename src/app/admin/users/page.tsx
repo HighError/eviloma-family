@@ -16,26 +16,14 @@ export default function AdminUsers() {
 
   return (
     <>
-      <h2 className='mb-4 text-center text-2xl font-semibold'>Список користувачів</h2>
+      <h2>Список користувачів</h2>
       {!isLoading && isError && (
         <div className='text-center'>Помилка при завантаженні підписок. Спробуйте ще раз...</div>
       )}
       {!isLoading && !isError && (
-        <div className='grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3'>
+        <div className='grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
           {users.map((user) => {
-            return (
-              <UserItem
-                key={user.id}
-                id={user.id}
-                sub={user.sub}
-                username={user.username}
-                email={user.email}
-                avatar={user.avatar}
-                balance={user.balance / 100}
-                subscriptionsCount={user.subscriptions.length}
-                transactionsCount={user.transactions.length}
-              />
-            );
+            return <UserItem key={user.id} user={user} />;
           })}
         </div>
       )}

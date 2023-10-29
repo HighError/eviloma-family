@@ -1,9 +1,10 @@
-import mongoose, { ObjectId } from 'mongoose';
-import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
+import { db } from '@/db';
+import { subscriptionsSchema } from '@/db/schema';
 import { verifyAdmin } from '@/lib/verifyUser';
-import Subscription from '@/models/Subscription';
-import User from '@/models/User';
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -17,18 +18,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const id = params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
-      return NextResponse.json(
-        {
-          error: 'Невалідний ідентифікатор підписки',
-        },
-        { status: 400 }
-      );
-    }
-
+    const { id } = params;
     const { title, date, cost } = await request.json();
-    if (!title || !date || (!cost && cost !== 0)) {
+    if (!id || !title || !date || (!cost && cost !== 0)) {
       return NextResponse.json(
         {
           error: 'Відсутній один або декілька параметрів',
@@ -37,7 +29,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const sub = await Subscription.findById(id);
+    const sub = await db
+      .update(subscriptionsSchema)
+      .set({ id, title, date: new Date(date), cost })
+      .where(eq(subscriptionsSchema.id, id))
+      .returning();
 
     if (!sub) {
       return NextResponse.json(
@@ -47,12 +43,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         { status: 400 }
       );
     }
-
-    sub.title = title;
-    sub.date = date;
-    sub.cost = cost;
-
-    await sub.save();
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {
@@ -72,8 +62,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
-    const id = params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
+    const { id } = params;
+    if (!id) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор підписки',
@@ -82,14 +72,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
-    const users = (await User.find({})).filter((u) => u.subscriptions.includes(id));
-
-    for await (const user of users) {
-      user.subscriptions = user.subscriptions.filter((x: ObjectId[]) => x.toString() !== id);
-      await user.save();
-    }
-
-    await Subscription.findByIdAndDelete(id);
+    await db.delete(subscriptionsSchema).where(eq(subscriptionsSchema.id, id));
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {

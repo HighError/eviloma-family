@@ -2,9 +2,9 @@ import { create } from 'zustand';
 
 import Axios from '@/lib/axios';
 import progress from '@/lib/progressbar';
-import FullUser from '@/types/fullUser';
+import type FullUser from '@/types/fullUser';
 
-interface iStore {
+type Store = {
   isPreLoaded: boolean;
   isLoading: boolean;
   isError: boolean;
@@ -12,9 +12,9 @@ interface iStore {
   users: FullUser[];
 
   updateUsers: () => void;
-}
+};
 
-const useUsersStore = create<iStore>((set) => ({
+const useUsersStore = create<Store>((set) => ({
   isPreLoaded: false,
   isLoading: true,
   isError: false,

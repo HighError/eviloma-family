@@ -13,28 +13,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import type { transactionsSchema } from '@/db/schema';
 import Axios from '@/lib/axios';
 import useTempAdminStore from '@/stores/tempAdminUser';
 import useUserStore from '@/stores/user';
 
-interface iProps {
-  id: string;
-  title: string;
-}
-
-export default function RemoveSubscriptionModal({ id, title }: iProps) {
+export default function RemoveTransaction({
+  transaction,
+}: {
+  transaction: typeof transactionsSchema.$inferSelect;
+}) {
   const [open, setOpen] = useState<boolean>(false);
   const { user, updateUser } = useTempAdminStore();
-  const { id: meID, updateUser: updateMe } = useUserStore();
+  const { user: activeUser, updateUser: updateMe } = useUserStore();
 
-  async function deleteSubscription() {
+  const deleteTransaction = async () => {
     try {
-      await Axios.delete(`/api/user/${user?.id}/subscription/${id}`);
+      await Axios.delete(`/api/user/${user?.id}/transaction/${transaction.id}`);
+      toast.success('Транзакцію видалено');
       await updateUser(user?.id);
-      if (user?.id === meID) {
+      if (user?.id === activeUser?.id) {
         await updateMe();
       }
-      toast.success('Підписку видалено у користувача');
+      return null;
     } catch (err) {
       if (err instanceof AxiosError) {
         return toast.error(err.response?.data.error ?? 'Помилка сервера');
@@ -43,7 +44,7 @@ export default function RemoveSubscriptionModal({ id, title }: iProps) {
     } finally {
       setOpen(false);
     }
-  }
+  };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -53,17 +54,16 @@ export default function RemoveSubscriptionModal({ id, title }: iProps) {
       </DialogTrigger>
       <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle>Видалення підписки у користувача</DialogTitle>
+          <DialogTitle>Видалення транзакції</DialogTitle>
           <DialogDescription>
-            Ви дійсно хочете видалити підписку <span className='font-semibold'>{title}</span> у
-            цього користувача?
+            Ви дійсно хочете видалити трназакцію у цього користувача?
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className='flex-wrap gap-2'>
           <Button variant='outline' onClick={() => setOpen(false)}>
             Скасувати
           </Button>
-          <Button variant='destructive' onClick={() => deleteSubscription()}>
+          <Button variant='destructive' onClick={() => deleteTransaction()}>
             Видалити
           </Button>
         </DialogFooter>

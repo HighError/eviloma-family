@@ -1,20 +1,20 @@
 import { create } from 'zustand';
 
+import type { subscriptionsSchema } from '@/db/schema';
 import Axios from '@/lib/axios';
 import progress from '@/lib/progressbar';
-import { ISubscription } from '@/models/Subscription';
 
-interface iStore {
+type Store = {
   isPreLoaded: boolean;
   isLoading: boolean;
   isError: boolean;
 
-  subscriptions: ISubscription[];
+  subscriptions: (typeof subscriptionsSchema.$inferSelect)[];
 
   updateSubscriptions: () => Promise<void>;
-}
+};
 
-const useSubscriptionsStore = create<iStore>((set) => ({
+const useSubscriptionsStore = create<Store>((set) => ({
   isPreLoaded: false,
   isLoading: true,
   isError: false,

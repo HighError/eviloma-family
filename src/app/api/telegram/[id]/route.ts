@@ -1,18 +1,17 @@
 import axios from 'axios';
-import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import dbConnect from '@/lib/dbConnect';
+import { db } from '@/db';
+import { usersSchema } from '@/db/schema';
 import { logtoUserEndPoint } from '@/lib/logto';
 import getKey from '@/lib/logtoManagementApiKey';
-import { ITransaction } from '@/models/Transaction';
-import User from '@/models/User';
-import FullUser from '@/types/fullUser';
-import LogtoUser from '@/types/logtoUser';
+import type LogtoUser from '@/types/logtoUser';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const authorization = request.headers.get('Authorization');
-    await dbConnect();
 
     if (!authorization || authorization !== `Bearer ${process.env.TELEGRAM_API_KEY}`) {
       return NextResponse.json(
@@ -30,9 +29,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         { status: 400 }
       );
     }
-    const user = await User.findOne({ telegramID: params.id })
-      .populate('subscriptions')
-      .populate('transactions');
+    const user = await db.query.usersSchema.findFirst({
+      with: {
+        subscriptions: {
+          columns: {},
+          with: {
+            subscription: true,
+          },
+        },
+        transactions: true,
+      },
+      where: eq(usersSchema.telegramID, params.id),
+    });
 
     if (!user) {
       return NextResponse.json({ error: 'Користувача не знайдено' }, { status: 400 });
@@ -47,41 +55,29 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const response = await axios.get(`${logtoUserEndPoint}/${user.sub}`, {
+    const response = await axios.get(`${logtoUserEndPoint}/${user.id}`, {
       headers: {
-        Authorization: 'Bearer ' + token,
+        Authorization: `Bearer ${token}`,
       },
     });
 
     const logtoUsers: LogtoUser = response.data;
 
-    const data: FullUser = {
-      id: user._id,
-      sub: logtoUsers.id,
-      avatar: logtoUsers.avatar,
-      username: logtoUsers.username,
+    const data = {
+      ...user,
       email: logtoUsers.primaryEmail,
-      balance: user.balance,
-      paymentLink: user.paymentLink,
-      telegramID: user.telegramID,
-      subscriptions: user.subscriptions,
-      transactions: user.transactions
-        .sort(
-          (a: ITransaction, b: ITransaction) =>
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
-        .slice(0, 5),
+      username: logtoUsers.username,
+      avatar: logtoUsers.avatar,
+      subscriptions: user.subscriptions.map((e) => e.subscription!),
     };
     return NextResponse.json(data, { status: 200 });
   } catch (err) {
-    console.log(err);
     return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await dbConnect();
     const authorization = request.headers.get('Authorization');
     if (!authorization || authorization !== `Bearer ${process.env.TELEGRAM_API_KEY}`) {
       return NextResponse.json(
@@ -92,15 +88,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
-    const user = await User.findOne({ telegramID: params.id });
-
-    if (!user) {
-      return NextResponse.json({ error: 'Користувача не знайдено' }, { status: 400 });
-    }
-
-    user.telegramID = null;
-
-    await user.save();
+    await db
+      .update(usersSchema)
+      .set({ telegramID: null })
+      .where(eq(usersSchema.telegramID, params.id));
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {

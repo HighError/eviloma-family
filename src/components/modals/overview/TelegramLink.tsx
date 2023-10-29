@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import Axios from '@/lib/axios';
 
-export default function TelegramLinkModal() {
+export default function TelegramLink() {
   const [open, setOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -50,7 +50,7 @@ export default function TelegramLinkModal() {
         </DialogHeader>
         <DialogDescription>
           Для прив&apos;язки телеграм, натисніть на кнопку нижче. Для вас буде згенеровано
-          унікальний токен, який буде дійсний на протязі 20 хвилин. Після того як ви натисните
+          унікальний токен, який буде дійсний на протязі 15 хвилин. Після того як ви натисните
           кнопку, ви будете перенаправлені в телеграм бота.
         </DialogDescription>
         <DialogFooter className='flex-wrap gap-2'>

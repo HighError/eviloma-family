@@ -7,13 +7,13 @@ import * as z from 'zod';
 import AutoForm from '@/components/ui/auto-form';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import Axios from '@/lib/axios';
 import { transactionCategory } from '@/lib/categoryList';
 import useTempAdminStore from '@/stores/tempAdminUser';
@@ -39,24 +39,24 @@ const formSchema = z.object({
   suma: z.coerce.number({ required_error: 'Сума повинна бути заповнена' }).describe('Сума'),
 });
 
-export default function AddNewTransactionModal() {
+export default function CreateTransaction() {
   const { user, updateUser } = useTempAdminStore();
-  const { id, updateUser: updateMe } = useUserStore();
+  const { user: activeUser, updateUser: updateMe } = useUserStore();
 
   const [open, setOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    values = { ...values, suma: values.suma * 100 };
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const data = { ...values, suma: values.suma * 100 };
     try {
       setIsLoading(true);
-      await Axios.post(`/api/user/${user?.id}/transaction`, values);
+      await Axios.post(`/api/user/${user?.id}/transaction`, data);
+      toast.success('Транзакцію додано');
       await updateUser(user?.id);
-      if (user?.id === id) {
+      if (user?.id === activeUser?.id) {
         await updateMe();
       }
-      setOpen(false);
-      return toast.success('Транзакцію додано');
+      return setOpen(false);
     } catch (err) {
       if (err instanceof AxiosError) {
         return toast.error(err.response?.data.error ?? 'Помилка сервера');
@@ -65,20 +65,20 @@ export default function AddNewTransactionModal() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
         <Button variant='outline'>
           <Icon icon='mdi:plus-circle-outline' fontSize='20px' className='mr-2' />
           Додати
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Додавання транзакції</DialogTitle>
-        </DialogHeader>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Додавання транзакції</SheetTitle>
+        </SheetHeader>
         <AutoForm
           formSchema={formSchema}
           onSubmit={onSubmit}
@@ -91,7 +91,7 @@ export default function AddNewTransactionModal() {
             },
           }}
         >
-          <DialogFooter className='flex-wrap gap-2'>
+          <SheetFooter className='flex-wrap gap-2'>
             <Button
               type='button'
               onClick={() => setOpen(false)}
@@ -103,9 +103,9 @@ export default function AddNewTransactionModal() {
             <Button type='submit' disabled={isLoading}>
               Додати
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </AutoForm>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

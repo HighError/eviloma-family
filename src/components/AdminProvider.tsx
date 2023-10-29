@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import useUserStore from '@/stores/user';
 
 export default function AdminProvider({ children }: { children: React.ReactNode }) {
-  const { isAdmin } = useUserStore();
+  const { user } = useUserStore();
   const router = useRouter();
-  if (!isAdmin) {
+  if (!user || user.role === 'default') {
     return (
       <div className='flex h-[100dvh] w-full flex-col items-center gap-2 pt-10'>
         <Image src='/admin.png' alt='403' width={320} height={320} priority />

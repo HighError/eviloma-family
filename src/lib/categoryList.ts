@@ -6,7 +6,7 @@ interface ICategory {
 
 // Default category for all lists
 const defaultCategory: ICategory = {
-  name: 'Others',
+  name: 'Other',
   icon: 'mdi:help-circle-outline',
   color: '#6666ff',
 } as const;

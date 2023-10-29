@@ -16,15 +16,15 @@ import {
 import Axios from '@/lib/axios';
 import useUserStore from '@/stores/user';
 
-export default function UnlinkTelegramModal() {
+export default function UnlinkTelegram() {
   const [open, setOpen] = useState<boolean>(false);
   const { updateUser } = useUserStore();
 
-  async function unlink() {
+  const unlink = async () => {
     try {
       await Axios.delete(`/api/telegram`);
-      await updateUser();
       toast.success("Телеграм успішно від'язано");
+      return await updateUser();
     } catch (err) {
       if (err instanceof AxiosError) {
         return toast.error(err.response?.data.error ?? 'Помилка сервера');
@@ -33,7 +33,7 @@ export default function UnlinkTelegramModal() {
     } finally {
       setOpen(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -52,7 +52,7 @@ export default function UnlinkTelegramModal() {
           <Button variant='outline' onClick={() => setOpen(false)}>
             Скасувати
           </Button>
-          <Button variant='destructive' onClick={() => unlink()}>
+          <Button variant='destructive' onClick={unlink}>
             Відв&apos;язати
           </Button>
         </DialogFooter>

@@ -7,7 +7,7 @@ import React from 'react';
 import { ControllerRenderProps, DefaultValues, FieldValues, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shadcn';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion';
 import { Button } from './button';

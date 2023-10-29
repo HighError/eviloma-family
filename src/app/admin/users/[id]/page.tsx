@@ -40,16 +40,15 @@ export default function AdminUser({ params }: { params: { id: string } }) {
   } = useSubscriptionsStore();
 
   useEffect(() => {
-    update();
-
     async function update() {
-      if (user?.id != params.id) {
+      if (user?.id !== params.id) {
         if (!isPreLoaded || isErrorSubscriptions) {
           await updateSubscriptions();
         }
         await updateUser(params.id);
       }
     }
+    update();
   }, []);
 
   const actionItems = useMemo(
@@ -67,12 +66,12 @@ export default function AdminUser({ params }: { params: { id: string } }) {
         onClick: () => router.push('/admin/users'),
       },
     ],
-    []
+    [params.id, router, updateUser]
   );
 
   return (
     <div>
-      <h2 className='text-center text-2xl font-semibold'>Упраління користувачем</h2>
+      <h2>Упраління користувачем</h2>
       <MobileMenu
         menu={menu}
         setMenu={setMenu}

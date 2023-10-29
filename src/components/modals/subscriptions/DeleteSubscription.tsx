@@ -13,26 +13,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import type { subscriptionsSchema } from '@/db/schema';
 import Axios from '@/lib/axios';
 import useSubscriptionsStore from '@/stores/subscriptions';
 import useUserStore from '@/stores/user';
 
-interface iProps {
-  id: string;
-  title: string;
-}
-
-export default function DeleteSubscriptionModal({ id, title }: iProps) {
+export default function DeleteSubscription({
+  subscription,
+}: {
+  subscription: typeof subscriptionsSchema.$inferSelect;
+}) {
   const [open, setOpen] = useState<boolean>(false);
   const { updateSubscriptions, isLoading } = useSubscriptionsStore();
   const { updateUser } = useUserStore();
 
-  async function deleteSubscription() {
+  const deleteSubscription = async () => {
     try {
-      await Axios.delete(`/api/subscriptions/${id}`);
-      await updateSubscriptions();
-      await updateUser();
+      await Axios.delete(`/api/subscriptions/${subscription.id}`);
       toast.success('Підписка видалена');
+      await updateSubscriptions();
+      return await updateUser();
     } catch (err) {
       if (err instanceof AxiosError) {
         return toast.error(err.response?.data.error ?? 'Помилка сервера');
@@ -41,7 +41,7 @@ export default function DeleteSubscriptionModal({ id, title }: iProps) {
     } finally {
       setOpen(false);
     }
-  }
+  };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -53,8 +53,8 @@ export default function DeleteSubscriptionModal({ id, title }: iProps) {
         <DialogHeader>
           <DialogTitle>Видалення підписки</DialogTitle>
           <DialogDescription>
-            Ви дійсно хочете видалити підписку <span className='font-semibold'>{title}</span>? Цю
-            дію не можна відмінити!
+            Ви дійсно хочете видалити підписку{' '}
+            <span className='font-semibold'>{subscription.title}</span>? Цю дію не можна відмінити!
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className='flex-wrap gap-2'>

@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
+import { db } from '@/db';
+import { subscriptionsSchema } from '@/db/schema';
 import { verifyAdmin } from '@/lib/verifyUser';
-import Subscription, { ISubscription } from '@/models/Subscription';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const subscriptions: ISubscription[] = await Subscription.find({});
+    const subscriptions = await db.query.subscriptionsSchema.findMany();
 
     return NextResponse.json(subscriptions, { status: 200 });
   } catch (err) {
@@ -35,8 +37,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, category, date, cost } = await request.json();
-    if (!title || !category || !date || (!cost && cost !== 0)) {
+    const { id, title, category, date, cost } = await request.json();
+    if (!title || !date || (!cost && cost !== 0)) {
       return NextResponse.json(
         {
           error: 'Відсутній один або декілька параметрів',
@@ -45,9 +47,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newSubs = new Subscription({ title, category, date, cost });
-
-    await newSubs.save();
+    await db
+      .insert(subscriptionsSchema)
+      .values({ id, title, category, cost, date: new Date(date) });
     return NextResponse.json({}, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });

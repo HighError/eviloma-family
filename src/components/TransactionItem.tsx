@@ -7,24 +7,22 @@ import React from 'react';
 
 import IconWithBackground from '@/components/IconWithBackground';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import type { transactionsSchema } from '@/db/schema';
 import { transactionCategory } from '@/lib/categoryList';
 import { getMoneyFormat } from '@/lib/moneyFormat';
 
-interface IProps {
-  title: string;
-  categoryID: string;
-  suma: number;
-  date: Date;
-}
-
-export default function TransactionItem({ title, categoryID, suma, date }: IProps) {
-  const category = transactionCategory.find((item) => item.name === categoryID);
+export default function TransactionItem({
+  transaction,
+}: {
+  transaction: typeof transactionsSchema.$inferSelect;
+}) {
+  const category = transactionCategory.find((item) => item.name === transaction.category);
   return (
     <Card>
       <CardHeader>
         <div className='flex flex-row items-center gap-3 text-xl font-semibold'>
           <IconWithBackground icon={category?.icon} color={category?.color} />
-          <span>{title}</span>
+          <span>{transaction.title}</span>
         </div>
       </CardHeader>
       <CardContent className='flex flex-col gap-2'>
@@ -34,14 +32,16 @@ export default function TransactionItem({ title, categoryID, suma, date }: IProp
         </div>
         <div className='flex flex-row items-center gap-1'>
           <Icon icon='mdi:calendar-range' fontSize='20px' />
-          <span>Дата оплати: {format(date, 'dd MMMM yyyy HH:mm', { locale: uk })}</span>
+          <span>
+            Дата оплати: {format(new Date(transaction.date), 'dd MMMM yyyy HH:mm', { locale: uk })}
+          </span>
         </div>
         <div className='flex flex-row items-center gap-1'>
           <Icon icon='mdi:cash' fontSize='20px' />
           <span>
             Сума:{' '}
-            <span className={suma < 0 ? 'text-red-500' : ''}>
-              {getMoneyFormat(true).format(suma)}
+            <span className={transaction.suma < 0 ? 'text-red-500' : ''}>
+              {getMoneyFormat(true).format(transaction.suma / 100)}
             </span>
           </span>
         </div>

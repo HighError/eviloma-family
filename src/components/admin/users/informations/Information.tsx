@@ -17,7 +17,7 @@ import useUserStore from '@/stores/user';
 
 export default function Information() {
   const { user, updateUser } = useTempAdminStore();
-  const { id, updateUser: updateMe } = useUserStore();
+  const { user: activeUser, updateUser: updateMe } = useUserStore();
   const [url, setUrl] = useState<string>(user?.paymentLink ?? '');
 
   async function updatePaymentLink() {
@@ -26,11 +26,12 @@ export default function Information() {
     }
     try {
       await Axios.put(`/api/user/${user?.id}/paymentlink`, { url });
+      toast.success('Спосіб оплати оновлено');
       await updateUser(user?.id);
-      if (id === user?.id) {
+      if (activeUser?.id === user?.id) {
         await updateMe();
       }
-      return toast.success('Спосіб оплати оновлено');
+      return null;
     } catch (err) {
       if (err instanceof AxiosError) {
         return toast.error(err.response?.data.error);
@@ -41,24 +42,13 @@ export default function Information() {
 
   return (
     <div className='w-full pb-5'>
-      <h3 className='mb-2 text-center text-xl font-semibold'>Інформація</h3>
+      <h3>Інформація</h3>
       <HorizontalDivider />
       <div className='mt-4 flex max-w-3xl flex-col gap-6 md:gap-10'>
         <div className='space-y-2'>
-          <Label htmlFor='id'>Eviloma Family ID</Label>
+          <Label htmlFor='id'>Eviloma ID</Label>
           <Input id='id' value={user?.id} readOnly />
-          <p className='text-sm text-muted-foreground'>
-            ID користувача в системі Eviloma Family. Цей ID використовується для взаємодії
-            користувача з цим сервісом.
-          </p>
-        </div>
-        <div className='space-y-2'>
-          <Label htmlFor='sub'>Eviloma ID</Label>
-          <Input id='sub' value={user?.sub} readOnly />
-          <p className='text-sm text-muted-foreground'>
-            ID користувача в системі Eviloma. Використовується для синхронізації облікового запису
-            Eviloma з цим сервісом.
-          </p>
+          <p className='text-sm text-muted-foreground'>ID користувача в системі Eviloma.</p>
         </div>
         <div className='space-y-2'>
           <Label htmlFor='email'>Email</Label>

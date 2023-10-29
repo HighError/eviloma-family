@@ -2,7 +2,7 @@ export default function generateTokenKey(length: number) {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let tokenKey = '';
 
-  for (let i = 0; i < length; i++) {
+  for (let i = 0; i < length; i += 1) {
     tokenKey += characters.charAt(Math.floor(Math.random() * characters.length));
   }
 

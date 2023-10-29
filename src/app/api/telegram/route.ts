@@ -1,33 +1,34 @@
+import { eq } from 'drizzle-orm';
 import moment from 'moment';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import dbConnect from '@/lib/dbConnect';
+import { db } from '@/db';
+import { tempTokensSchema, usersSchema } from '@/db/schema';
 import generateTokenKey from '@/lib/tokenGenerator';
 import { verifyAuth } from '@/lib/verifyUser';
-import TempToken, { ITempToken } from '@/models/TempToken';
-import User from '@/models/User';
 
 const serverErrorMessage = 'Помилка сервера';
 const authorizationErrorMessage = 'Авторизація не виконана.';
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const { isAuthenticated, claims } = await verifyAuth(request);
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !claims) {
       return NextResponse.json({ error: authorizationErrorMessage }, { status: 403 });
     }
 
-    const newToken = new TempToken({
-      user: claims?.sub ?? '',
-      token: generateTokenKey(16),
-      date: new Date(),
-    });
-
-    await newToken.save();
+    const newToken = await db
+      .insert(tempTokensSchema)
+      .values({
+        token: generateTokenKey(16),
+        user: claims.sub,
+        validUntil: moment(new Date()).add(15, 'minutes').toDate(),
+      })
+      .returning();
 
     return NextResponse.json(
       {
-        token: newToken.token,
+        token: newToken[0].token,
       },
       { status: 200 }
     );
@@ -39,7 +40,6 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const authorization = request.headers.get('Authorization');
-    await dbConnect();
 
     if (!authorization || authorization !== `Bearer ${process.env.TELEGRAM_API_KEY}`) {
       return NextResponse.json(
@@ -61,7 +61,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const tokenObject: ITempToken | null = await TempToken.findOne({ token });
+    const tokenObject = await db.query.tempTokensSchema.findFirst({
+      where: eq(tempTokensSchema.token, token),
+    });
 
     if (!tokenObject) {
       return NextResponse.json(
@@ -72,7 +74,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const experiencedDate = moment(new Date(tokenObject.date)).add(20, 'minutes');
+    const experiencedDate = moment(tokenObject.validUntil).add(15, 'minutes');
 
     if (experiencedDate.isBefore(new Date())) {
       return NextResponse.json(
@@ -83,7 +85,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const telegramUser = await User.findOne({ telegramID: telegramID });
+    const telegramUser = await db.query.usersSchema.findFirst({
+      where: eq(usersSchema.telegramID, telegramID),
+    });
 
     if (telegramUser) {
       return NextResponse.json(
@@ -94,9 +98,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const user = await User.findOne({ sub: tokenObject.user });
+    const user = await db
+      .update(usersSchema)
+      .set({ telegramID })
+      .where(eq(usersSchema.id, tokenObject.user))
+      .returning();
 
-    if (!user) {
+    if (!user || user.length === 0) {
       return NextResponse.json(
         {
           error: 'Користувача не знайдено',
@@ -105,10 +113,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    user.telegramID = telegramID;
-
-    await user.save();
-    await TempToken.findByIdAndDelete(tokenObject._id);
+    await db.delete(tempTokensSchema).where(eq(tempTokensSchema.id, tokenObject.id));
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {
@@ -118,17 +123,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    await dbConnect();
     const { isAuthenticated, claims } = await verifyAuth(request);
     if (!isAuthenticated || !claims) {
       return NextResponse.json({ error: authorizationErrorMessage }, { status: 403 });
     }
 
-    const user = await User.findOne({ sub: claims.sub });
-
-    user.telegramID = null;
-
-    await user.save();
+    await db.update(usersSchema).set({ telegramID: null }).where(eq(usersSchema.id, claims.sub));
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {

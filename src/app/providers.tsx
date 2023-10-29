@@ -1,4 +1,5 @@
 'use client';
+
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import React, { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';

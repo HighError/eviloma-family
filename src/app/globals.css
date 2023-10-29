@@ -61,3 +61,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+h1 {
+  @apply text-3xl md:text-4xl xl:text-5xl font-bold mt-8 mb-5 text-center;
+}
+
+h2 {
+  @apply text-2xl md:text-3xl xl:text-4xl font-semibold mt-8 mb-5 text-center;
+}
+
+h3 {
+  @apply text-xl md:text-2xl xl:text-3xl font-semibold mt-8 mb-5 text-center;
+}
+
+h4 {
+  @apply text-lg md:text-xl xl:text-2xl font-semibold mt-8 mb-5 text-center;
+}
+
+h5 {
+  @apply text-lg md:text-lg xl:text-xl font-medium mt-8 mb-5 text-center;
+}
+
+h6 {
+  @apply md:text-lg xl:text-lg font-medium mt-4 mb-2 text-center;
+}

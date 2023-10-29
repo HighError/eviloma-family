@@ -1,14 +1,14 @@
 import axios from 'axios';
-import { NextRequest, NextResponse } from 'next/server';
+import { eq, sql } from 'drizzle-orm';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import dbConnect from '@/lib/dbConnect';
-import Transaction from '@/models/Transaction';
-import User from '@/models/User';
+import { db } from '@/db';
+import { transactionsSchema, usersSchema } from '@/db/schema';
 
 export async function POST(request: NextRequest) {
   try {
     const authorization = request.headers.get('Authorization');
-    await dbConnect();
 
     if (!authorization || authorization !== `Bearer ${process.env.PAYMENT_API_KEY}`) {
       return NextResponse.json(
@@ -19,27 +19,33 @@ export async function POST(request: NextRequest) {
       );
     }
     const { id, suma, date } = await request.json();
-    const user = await User.findOne({ sub: id }).populate('transactions');
-    if (!user) {
-      return NextResponse.json({ error: 'Користувача не знайдено' }, { status: 400 });
+
+    if (!id || !suma || !date) {
+      return NextResponse.json(
+        {
+          error: 'Один або декілька параметрів відсутні',
+        },
+        { status: 400 }
+      );
     }
 
-    const newTransaction = new Transaction({
+    await db.insert(transactionsSchema).values({
       title: 'Поповнення рахунку',
       category: 'Deposit',
-      suma: suma,
-      date: new Date(date * 1000),
+      suma,
+      date: new Date(date),
+      user: id,
     });
 
-    await newTransaction.save();
+    const user = await db
+      .update(usersSchema)
+      .set({ balance: sql`${usersSchema.balance} + ${suma}` })
+      .where(eq(usersSchema.id, id))
+      .returning();
 
-    user.balance += suma;
-    user.transactions.push(newTransaction);
-    await user.save();
-
-    if (user.telegramID) {
+    if (user[0].telegramID) {
       const notificationData = {
-        chat_id: user.telegramID,
+        chat_id: user[0].telegramID,
         text: `Ваш баланс поповнено на ${(suma / 100).toFixed(2)} грн!☺️`,
       };
       await axios.post(

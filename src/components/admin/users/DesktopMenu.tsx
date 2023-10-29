@@ -1,10 +1,11 @@
 import { Icon } from '@iconify/react';
-import React, { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { HorizontalDivider } from '@/components/ui/divider';
 
-interface iProps {
+interface IProps {
   menu: string;
   setMenu: Dispatch<SetStateAction<string>>;
   isLoading: boolean;
@@ -20,7 +21,7 @@ interface iProps {
   }[];
 }
 
-export default function DesktopMenu({ menu, setMenu, isLoading, menuItems, actionItems }: iProps) {
+export default function DesktopMenu({ menu, setMenu, isLoading, menuItems, actionItems }: IProps) {
   return (
     <div className='hidden w-64 flex-col gap-3 md:flex'>
       {menuItems.map((item) => (

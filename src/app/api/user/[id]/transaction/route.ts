@@ -1,14 +1,13 @@
-import mongoose from 'mongoose';
-import { NextRequest, NextResponse } from 'next/server';
+import { eq, sql } from 'drizzle-orm';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import dbConnect from '@/lib/dbConnect';
+import { db } from '@/db';
+import { transactionsSchema, usersSchema } from '@/db/schema';
 import { verifyAdmin } from '@/lib/verifyUser';
-import Transaction from '@/models/Transaction';
-import User from '@/models/User';
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // Verify if the user is an admin
     const { isAdmin } = await verifyAdmin(request);
 
     if (!isAdmin) {
@@ -20,8 +19,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       );
     }
 
-    const id = params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
+    const { id } = params;
+    if (!id) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор користувача',
@@ -41,9 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       );
     }
 
-    await dbConnect();
-
-    const user = await User.findById(id).populate('transactions');
+    const user = await db.query.usersSchema.findFirst({ where: eq(usersSchema.id, id) });
 
     if (!user) {
       return NextResponse.json(
@@ -54,15 +51,17 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       );
     }
 
-    const transaction = new Transaction({ title, category, date, suma });
-
-    await transaction.save();
-
-    user.transactions.push(transaction);
-
-    user.balance += suma;
-
-    await user.save();
+    await db.insert(transactionsSchema).values({
+      title,
+      category,
+      date: new Date(date),
+      suma,
+      user: id,
+    });
+    await db
+      .update(usersSchema)
+      .set({ balance: sql`balance + ${suma}` })
+      .where(eq(usersSchema.id, id));
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {

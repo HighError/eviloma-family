@@ -14,21 +14,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import type { subscriptionsSchema } from '@/db/schema';
 import Axios from '@/lib/axios';
 import getNonExistSubscriptions from '@/lib/getNonExistSubscriptions';
-import { ISubscription } from '@/models/Subscription';
 import useSubscriptionsStore from '@/stores/subscriptions';
 import useTempAdminStore from '@/stores/tempAdminUser';
 import useUserStore from '@/stores/user';
 
-export default function AddNewSubscriptionModal() {
+export default function AddSubscriptionForUser() {
   const { subscriptions } = useSubscriptionsStore();
   const { user, updateUser } = useTempAdminStore();
-  const { id, updateUser: updateMe } = useUserStore();
-  const [nonExistSubscriptions, setNonExistSubscriptions] = useState<ISubscription[]>([]);
+  const { user: activeUser, updateUser: updateMe } = useUserStore();
+  const [nonExistSubscriptions, setNonExistSubscriptions] = useState<
+    (typeof subscriptionsSchema.$inferSelect)[]
+  >([]);
 
   useEffect(() => {
-    setNonExistSubscriptions(getNonExistSubscriptions(subscriptions, user?.subscriptions ?? []));
+    setNonExistSubscriptions(
+      getNonExistSubscriptions(subscriptions, user?.subscriptions.map((e) => e.subscription) ?? [])
+    );
   }, [user, subscriptions]);
 
   const subscriptionsList: readonly [string, ...string[]] = [
@@ -47,20 +51,20 @@ export default function AddNewSubscriptionModal() {
       .describe('Підписка'),
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const subID = nonExistSubscriptions.find((x) => x.title === values.subscription);
     if (!subID) {
       return toast.error('Помилка вибору підписки');
     }
     try {
       setIsLoading(true);
-      await Axios.put(`/api/user/${user?.id}/subscription/${subID._id}`);
+      await Axios.put(`/api/user/${user?.id}/subscription/${subID.id}`);
+      toast.success('Підписку додано');
       await updateUser(user?.id);
-      if (user?.id === id) {
+      if (user?.id === activeUser?.id) {
         await updateMe();
       }
-      setOpen(false);
-      return toast.success('Підписку додано');
+      return setOpen(false);
     } catch (err) {
       if (err instanceof AxiosError) {
         return toast.error(err.response?.data.error ?? 'Помилка сервера');
@@ -69,7 +73,7 @@ export default function AddNewSubscriptionModal() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

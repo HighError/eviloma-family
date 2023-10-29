@@ -13,9 +13,9 @@ import {
 } from '@/components/ui/dialog';
 import useUserStore from '@/stores/user';
 
-export default function DepositModal() {
+export default function Deposit() {
   const [open, setOpen] = useState<boolean>(false);
-  const { sub, paymentLink } = useUserStore();
+  const user = useUserStore((state) => state.user);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -29,22 +29,21 @@ export default function DepositModal() {
         <DialogHeader>
           <DialogTitle>Поповнення рахунку</DialogTitle>
         </DialogHeader>
-        {paymentLink && (
+        {user?.paymentLink ? (
           <DialogDescription className='flex flex-col gap-2'>
             <p>
               Для поповнення рахунку натисніть кнопку нижче. Це скопіює ваш ID та перенаправить вас
               на сторінку оплати.
             </p>
             <p>
-              Виберіть бажану суму, спосіб оплати та введіть в поле коментар ваш ID (без лишніх
-              символів).
+              Виберіть бажану суму, спосіб оплати та введіть в поле{' '}
+              <span className='font-bold text-primary'>коментар</span> ваш ID (без лишніх символів).
             </p>
             <p>
-              Ваш ID: <span className='font-semibold'>{sub}</span>
+              Ваш ID: <span className='font-semibold'>{user.id}</span>
             </p>
           </DialogDescription>
-        )}
-        {!paymentLink && (
+        ) : (
           <DialogDescription>
             Нажаль у вас не встановлено посилання для оплати. Будь ласка зверніться до
             адміністратора.
@@ -55,10 +54,10 @@ export default function DepositModal() {
             Скасувати
           </Button>
           <Button
-            disabled={!paymentLink}
+            disabled={!user?.paymentLink}
             onClick={() => {
-              navigator.clipboard.writeText(sub ?? '').then(() => {
-                window.open(paymentLink ?? '', '_blank', 'noreferrer');
+              navigator.clipboard.writeText(user?.id ?? '').then(() => {
+                window.open(user?.paymentLink ?? '', '_blank', 'noreferrer');
               });
             }}
           >

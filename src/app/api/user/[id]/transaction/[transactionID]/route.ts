@@ -1,17 +1,16 @@
-import mongoose, { ObjectId } from 'mongoose';
-import { NextRequest, NextResponse } from 'next/server';
+import { and, eq } from 'drizzle-orm';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import dbConnect from '@/lib/dbConnect';
+import { db } from '@/db';
+import { transactionsSchema } from '@/db/schema';
 import { verifyAdmin } from '@/lib/verifyUser';
-import Transaction from '@/models/Transaction';
-import User from '@/models/User';
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string; transactionID: string } }
 ) {
   try {
-    // Verify if the user is an admin
     const { isAdmin } = await verifyAdmin(request);
 
     if (!isAdmin) {
@@ -24,7 +23,7 @@ export async function DELETE(
     }
 
     const { id, transactionID } = params;
-    if (!id || !mongoose.isValidObjectId(id)) {
+    if (!id) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор користувача',
@@ -33,7 +32,7 @@ export async function DELETE(
       );
     }
 
-    if (!transactionID || !mongoose.isValidObjectId(transactionID)) {
+    if (!transactionID) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор транзакції',
@@ -42,28 +41,12 @@ export async function DELETE(
       );
     }
 
-    await dbConnect();
-
-    const user = (await User.find({})).filter((u) => u.transactions.includes(transactionID))[0];
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          error: 'Помилка пошуку користувача',
-        },
-        { status: 404 }
-      );
-    }
-
-    user.transactions = user.transactions.filter((x: ObjectId[]) => x.toString() !== transactionID);
-
-    await user.save();
-
-    await Transaction.findByIdAndDelete(transactionID);
+    await db
+      .delete(transactionsSchema)
+      .where(and(eq(transactionsSchema.id, transactionID), eq(transactionsSchema.user, id)));
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {
-    console.log(err);
     return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });
   }
 }

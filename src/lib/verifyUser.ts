@@ -1,15 +1,16 @@
-import { NextRequest } from 'next/server';
+import { eq } from 'drizzle-orm';
+import type { NextRequest } from 'next/server';
 
-import User from '@/models/User';
+import { db } from '@/db';
+import { usersSchema } from '@/db/schema';
 
-import dbConnect from './dbConnect';
 import { logtoClient } from './logto';
 
 export async function verifyAuth(request: NextRequest) {
   const { isAuthenticated, claims } = await logtoClient.getLogtoContext(request);
   return {
     isAuthenticated,
-    claims: claims ?? null,
+    claims,
   };
 }
 
@@ -19,15 +20,17 @@ export async function verifyAdmin(request: NextRequest) {
     return {
       isAuthenticated: false,
       isAdmin: false,
-      claims: null,
+      claims,
     };
   }
 
-  await dbConnect();
-  const user = await User.findOne({ sub: claims.sub });
+  const user = await db.query.usersSchema.findFirst({
+    where: eq(usersSchema.id, claims.sub),
+  });
+
   return {
     isAuthenticated: true,
-    isAdmin: user?.isAdmin ?? false,
-    claims: claims,
+    isAdmin: user?.role !== 'default',
+    claims,
   };
 }

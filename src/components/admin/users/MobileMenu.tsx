@@ -1,9 +1,10 @@
 import { Icon } from '@iconify/react';
-import React, { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
 
-interface iProps {
+interface IProps {
   menu: string;
   setMenu: Dispatch<SetStateAction<string>>;
   isLoading: boolean;
@@ -19,7 +20,7 @@ interface iProps {
   }[];
 }
 
-export default function MobileMenu({ menu, setMenu, isLoading, menuItems, actionItems }: iProps) {
+export default function MobileMenu({ menu, setMenu, isLoading, menuItems, actionItems }: IProps) {
   return (
     <div className='mt-2 flex flex-row items-center justify-between gap-2 md:hidden'>
       <Button variant='outline' size='icon' onClick={actionItems[1].onClick} disabled={isLoading}>

@@ -1,17 +1,16 @@
-import mongoose from 'mongoose';
-import { NextRequest, NextResponse } from 'next/server';
+import { and, eq } from 'drizzle-orm';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import dbConnect from '@/lib/dbConnect';
+import { db } from '@/db';
+import { userOnSubscriptions } from '@/db/schema';
 import { verifyAdmin } from '@/lib/verifyUser';
-import Subscription from '@/models/Subscription';
-import User, { IUser } from '@/models/User';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string; subID: string } }
 ) {
   try {
-    // Verify if the user is an admin
     const { isAdmin } = await verifyAdmin(request);
 
     if (!isAdmin) {
@@ -23,8 +22,8 @@ export async function PUT(
       );
     }
 
-    const id = params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
+    const { id, subID } = params;
+    if (!id) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор користувача',
@@ -32,9 +31,7 @@ export async function PUT(
         { status: 400 }
       );
     }
-
-    const subID = params.subID;
-    if (!subID || !mongoose.isValidObjectId(subID)) {
+    if (!subID) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор підписки',
@@ -43,32 +40,10 @@ export async function PUT(
       );
     }
 
-    await dbConnect();
-
-    const user = await User.findById(id).populate('subscriptions');
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          error: 'Помилка пошуку користувача',
-        },
-        { status: 404 }
-      );
-    }
-
-    const subscription = await Subscription.findById(subID);
-    if (!subscription) {
-      return NextResponse.json(
-        {
-          error: 'Помилка пошуку підписки',
-        },
-        { status: 404 }
-      );
-    }
-
-    user.subscriptions.push(subscription);
-
-    await user.save();
+    await db.insert(userOnSubscriptions).values({
+      userId: id,
+      subscriptionId: subID,
+    });
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {
@@ -81,7 +56,6 @@ export async function DELETE(
   { params }: { params: { id: string; subID: string } }
 ) {
   try {
-    // Verify if the user is an admin
     const { isAdmin } = await verifyAdmin(request);
 
     if (!isAdmin) {
@@ -93,8 +67,8 @@ export async function DELETE(
       );
     }
 
-    const id = params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
+    const { id, subID } = params;
+    if (!id) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор користувача',
@@ -103,8 +77,7 @@ export async function DELETE(
       );
     }
 
-    const subID = params.subID;
-    if (!subID || !mongoose.isValidObjectId(subID)) {
+    if (!subID) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор підписки',
@@ -113,22 +86,11 @@ export async function DELETE(
       );
     }
 
-    await dbConnect();
-
-    const user = await User.findById(id).populate('subscriptions');
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          error: 'Помилка пошуку користувача',
-        },
-        { status: 404 }
+    await db
+      .delete(userOnSubscriptions)
+      .where(
+        and(eq(userOnSubscriptions.userId, id), eq(userOnSubscriptions.subscriptionId, subID))
       );
-    }
-
-    user.subscriptions = user.subscriptions.filter((x: IUser) => x._id.toString() !== subID);
-
-    await user.save();
 
     return NextResponse.json({}, { status: 200 });
   } catch (err) {

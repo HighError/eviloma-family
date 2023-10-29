@@ -1,10 +1,11 @@
 import { type LogtoContext } from '@logto/next';
+import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+import { db } from '@/db';
+import { usersSchema } from '@/db/schema';
 import Axios from '@/lib/axios';
-import dbConnect from '@/lib/dbConnect';
-import User from '@/models/User';
 
 export async function GET() {
   try {
@@ -17,34 +18,46 @@ export async function GET() {
       }
     );
 
-    if (!data.isAuthenticated) {
+    if (!data.isAuthenticated || !data.claims) {
       return NextResponse.json({ isAuth: false }, { status: 200 });
     }
 
-    await dbConnect();
-
-    const user = await User.findOne({ sub: data.claims?.sub })
-      .populate('subscriptions')
-      .populate('transactions');
-
-    if (!user) {
-      const newUser = await new User({ sub: data.claims?.sub }).save();
-      return NextResponse.json(
-        {
-          isAuth: true,
-          isAdmin: newUser.isAdmin ?? false,
-          id: newUser._id,
-          sub: data.claims?.sub,
-          email: data.claims?.email,
-          username: data.claims?.username,
-          avatar: data.claims?.picture,
-          data: {
-            paymentLink: newUser.paymentLink,
-            balance: newUser.balance,
-            subscriptions: newUser.subscriptions,
-            transactions: newUser.transactions,
+    const user = await db.query.usersSchema.findFirst({
+      where: eq(usersSchema.id, data.claims.sub),
+      with: {
+        subscriptions: {
+          columns: {},
+          with: {
+            subscription: true,
           },
         },
+        transactions: true,
+      },
+    });
+
+    if (!user) {
+      await db.insert(usersSchema).values({ id: data.claims.sub });
+      const newUser = await db.query.usersSchema.findFirst({
+        where: eq(usersSchema.id, data.claims.sub),
+        with: {
+          subscriptions: {
+            with: {
+              subscription: true,
+            },
+          },
+          transactions: true,
+        },
+      });
+      return new NextResponse(
+        JSON.stringify({
+          isAuth: true,
+          user: {
+            ...newUser,
+            email: data.claims.email,
+            username: data.claims.username,
+            avatar: data.claims.picture,
+          },
+        }),
         { status: 200 }
       );
     }
@@ -52,24 +65,16 @@ export async function GET() {
     return NextResponse.json(
       {
         isAuth: true,
-        isAdmin: user.isAdmin ?? false,
-        id: user._id,
-        sub: data.claims?.sub,
-        avatar: data.claims?.picture,
-        username: data.claims?.username,
-        email: data.claims?.email,
-        data: {
-          paymentLink: user.paymentLink,
-          balance: user.balance,
-          subscriptions: user.subscriptions,
-          telegram: user.telegramID,
-          transactions: user.transactions,
+        user: {
+          ...user,
+          email: data.claims.email,
+          username: data.claims.username,
+          avatar: data.claims.picture,
         },
       },
       { status: 200 }
     );
   } catch (err) {
-    console.log(err);
     return NextResponse.json({ error: 'Помилка сервера' }, { status: 500 });
   }
 }

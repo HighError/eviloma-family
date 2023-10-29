@@ -1,13 +1,14 @@
 import axios, { AxiosError } from 'axios';
-import mongoose from 'mongoose';
-import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import dbConnect from '@/lib/dbConnect';
+import { db } from '@/db';
+import { usersSchema } from '@/db/schema';
 import { logtoUserEndPoint } from '@/lib/logto';
 import getKey from '@/lib/logtoManagementApiKey';
 import { verifyAdmin } from '@/lib/verifyUser';
-import User from '@/models/User';
-import LogtoUser from '@/types/logtoUser';
+import type LogtoUser from '@/types/logtoUser';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -23,8 +24,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const id = params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
+    const { id } = params;
+    if (!id) {
       return NextResponse.json(
         {
           error: 'Невалідний ідентифікатор користувача',
@@ -33,9 +34,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    await dbConnect();
-
-    const user = await User.findById(id).populate('subscriptions').populate('transactions');
+    const user = await db.query.usersSchema.findFirst({
+      where: eq(usersSchema.id, id),
+      with: {
+        subscriptions: {
+          columns: {},
+          with: {
+            subscription: true,
+          },
+        },
+        transactions: true,
+      },
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -56,9 +66,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const response = await axios.get(`${logtoUserEndPoint}/${user.sub}`, {
+    const response = await axios.get(`${logtoUserEndPoint}/${user.id}`, {
       headers: {
-        Authorization: 'Bearer ' + token,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -66,15 +76,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json(
       {
-        id: user._id,
-        sub: logtoUsers.id,
-        avatar: logtoUsers.avatar,
-        username: logtoUsers.username,
+        ...user,
         email: logtoUsers.primaryEmail,
-        balance: user.balance,
-        paymentLink: user.paymentLink,
-        subscriptions: user.subscriptions,
-        transactions: user.transactions,
+        username: logtoUsers.username,
+        avatar: logtoUsers.avatar,
       },
       { status: 200 }
     );
