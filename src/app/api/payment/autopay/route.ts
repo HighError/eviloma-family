@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
               .set({ balance: sql`${usersSchema.balance} - ${subscription.cost}` })
               .where(eq(usersSchema.id, user.id));
             await tx.insert(transactionsSchema).values({
-              title: 'Поповнення рахунку',
-              category: 'Deposit',
+              title: `Оплата підписки ${subscription.title}`,
+              category: subscription.category,
               suma: -subscription.cost,
               date: new Date(),
               user: user.id,
