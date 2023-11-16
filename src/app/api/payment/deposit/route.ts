@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-    const { id, suma, date } = await request.json();
+    const { id, suma } = await request.json();
 
-    if (!id || !suma || !date) {
+    if (!id || !suma) {
       return NextResponse.json(
         {
           error: 'Один або декілька параметрів відсутні',
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       title: 'Поповнення рахунку',
       category: 'Deposit',
       suma,
-      date: new Date(date),
+      date: new Date(),
       user: id,
     });
 
